@@ -15,7 +15,7 @@ from sqlalchemy import and_
 router = APIRouter(route_class=APIRouteWrapper)
 
 
-@router.post("/client/updatedata/login")
+@router.post("/client/updatedata/login", tags=["client"])
 def add_client(login: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
     data_in_db = db.query(ormtable.Client).filter(ormtable.Client.email == login.username).first()
     if data_in_db :
@@ -29,7 +29,7 @@ def add_client(login: OAuth2PasswordRequestForm = Depends(), db: Session = Depen
     else:
         return JSONResponse({'data':[], 'message': 'email_id doesnot exist', "status": "success"})
 
-@router.post("/client/availabledata")
+@router.post("/client/availabledata", tags=["client"])
 def add_client_availability(payload: ClientAvailable , request: CustomRequest, db: Session = Depends(get_db)):
     new_post = ormtable.ClientAvailable(**payload.dict())
     new_data = ClientAvailable(**new_post.__dict__).dict()

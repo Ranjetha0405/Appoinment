@@ -9,28 +9,43 @@ import json, smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
-app = FastAPI()
+tags_metadata = [
+    {
+        "name": "user",
+        "description": "User details.",
+    },
+    {
+        "name": "client",
+        "description": "Client details.",
+    },
+    {
+        "name": "appoinment",
+        "description": "Appoinment details.",
+    },
+]
+
+app = FastAPI(openapi_tags=tags_metadata)
 
 app.include_router(login.router)
 
 Base.metadata.create_all(bind=engine)
 
-@app.get("/user/details")
+@app.get("/user/details", tags=["user"])
 def user(db: Session = Depends(get_db)):
     posts = db.query(ormtable.User).all()
     return posts
 
-@app.get("/client/details")
+@app.get("/client/details", tags=["client"])
 def client(db: Session = Depends(get_db)):
     posts = db.query(ormtable.Client).all()
     return posts
 
-@app.get("/appoinment/details")
+@app.get("/appoinment/details", tags=["appoinment"])
 def appoinment(db: Session = Depends(get_db)):
     posts = db.query(ormtable.Appoinment).all()
     return posts
 
-@app.post("/user/updatedata")
+@app.post("/user/updatedata", tags=["user"])
 def add_user(payload: UserDetails ,db: Session = Depends(get_db)):
     new_post = ormtable.User(**payload.dict())
     new_data = [UserDetails(**new_post.__dict__).dict()]
@@ -46,7 +61,7 @@ def add_user(payload: UserDetails ,db: Session = Depends(get_db)):
             return JSONResponse({'data':[], 'message': 'Mobile number already exists', "status": "success"})
 
 
-@app.post("/client/updatedata/signup")
+@app.post("/client/updatedata/signup", tags=["client"])
 def add_client(payload:ClientDetails ,db: Session = Depends(get_db)):
     payload.password= utils.hash(payload.password)
     new_post = ormtable.Client(**payload.dict())
@@ -73,7 +88,7 @@ def add_client_unavailability(payload: datatype.ClientUnAvailable ,db: Session =
 
 """
 
-@app.post("/appoinment/createdata")
+@app.post("/appoinment/createdata", tags=["appoinment"])
 def add_appoinment(background_tasks: BackgroundTasks, payload: AppoinmentCreateDetails ,db: Session = Depends(get_db)):
     # payload_data = json.loads(json.dumps(payload,default=str))
     # print(payload_data)
@@ -138,7 +153,7 @@ def add_appoinment(background_tasks: BackgroundTasks, payload: AppoinmentCreateD
         return JSONResponse({'data': [], 'message': 'client out of station', "status": "success"})
 
 
-@app.get("/client-availability-time-to-user/{client_id}")
+@app.get("/client-availability-time-to-user/{client_id}", tags=["user"])
 def check_client_availability(client_id : int, db: Session = Depends(get_db)):
     availability = db.query(ormtable.ClientAvailable.available_date, func.group_concat(ormtable.ClientAvailable.available_starttime ,'|', ormtable.ClientAvailable.available_endtime ).label("available_time_slots")).filter(ormtable.ClientAvailable.client_id == client_id).group_by(ormtable.ClientAvailable.available_date).all() 
     if availability:
