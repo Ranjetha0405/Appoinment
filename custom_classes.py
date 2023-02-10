@@ -8,7 +8,6 @@ class CustomRequest(Request):
     def __init__(self):
         self.logged_in_user_id: int
 
-
 class APIRouteWrapper(APIRoute):
     def get_route_handler(self) -> Callable:
         original_route_handler = super().get_route_handler()

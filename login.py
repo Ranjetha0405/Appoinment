@@ -48,7 +48,7 @@ def add_client_availability(payload: ClientAvailable , request: CustomRequest, d
             db.add(new_post)
             db.commit()
             db.refresh(new_post)
-            return new_post
+            return JSONResponse({'data':new_post, 'message': 'added successfully', "status": "success"})
         else:
             return JSONResponse({'data':[], 'message': 'client already engaged in that time', "status": "success"})
     else:

@@ -33,17 +33,17 @@ Base.metadata.create_all(bind=engine)
 @app.get("/user/details", tags=["user"])
 def user(db: Session = Depends(get_db)):
     posts = db.query(ormtable.User).all()
-    return posts
+    return JSONResponse({'data':posts, 'message': 'success', "status": "success"})
 
 @app.get("/client/details", tags=["client"])
 def client(db: Session = Depends(get_db)):
     posts = db.query(ormtable.Client).all()
-    return posts
+    return JSONResponse({'data':posts, 'message': 'success', "status": "success"})
 
 @app.get("/appoinment/details", tags=["appoinment"])
 def appoinment(db: Session = Depends(get_db)):
     posts = db.query(ormtable.Appoinment).all()
-    return posts
+    return JSONResponse({'data':posts, 'message': 'success', "status": "success"})
 
 @app.post("/user/updatedata", tags=["user"])
 def add_user(payload: UserDetails ,db: Session = Depends(get_db)):
@@ -56,7 +56,7 @@ def add_user(payload: UserDetails ,db: Session = Depends(get_db)):
             db.add(new_post)
             db.commit()
             db.refresh(new_post)
-            return new_post
+            return JSONResponse({'data':new_post, 'message': 'added successfully', "status": "success"})
         else:
             return JSONResponse({'data':[], 'message': 'Mobile number already exists', "status": "success"})
 
@@ -73,7 +73,7 @@ def add_client(payload:ClientDetails ,db: Session = Depends(get_db)):
             db.add(new_post)
             db.commit()
             db.refresh(new_post)
-            return new_post
+            return JSONResponse({'data':new_post, 'message': 'added successfully', "status": "success"})
         else:
             return JSONResponse({'data':[], 'message': 'email_id already exists', "status": "success"})
 
