@@ -33,60 +33,67 @@ Base.metadata.create_all(bind=engine)
 @app.get("/user/details", tags=["user"])
 def user(db: Session = Depends(get_db)):
     posts = db.query(ormtable.User).all()
-    return JSONResponse({'data':posts, 'message': 'success', "status": "success"})
+    if not posts:
+        return JSONResponse({"data": [],
+                             "status": "success",
+                             "message": "No user found"})
+    return JSONResponse(json.loads(json.dumps({"data": [UserDetails.parse_obj(post.__dict__).dict() for post in posts],
+                         "status": "success",
+                         "message": "success"},default=str)))
 
 @app.get("/client/details", tags=["client"])
 def client(db: Session = Depends(get_db)):
     posts = db.query(ormtable.Client).all()
-    return JSONResponse({'data':posts, 'message': 'success', "status": "success"})
+    if not posts:
+        return JSONResponse({"data": [],
+                             "status": "success",
+                             "message": "No client found"})
+    return JSONResponse(json.loads(json.dumps({"data": [ClientDetails.parse_obj(post.__dict__).dict(exclude={"password"}) for post in posts],
+                         "status": "success",
+                         "message": "success"},default=str)))
 
 @app.get("/appoinment/details", tags=["appoinment"])
 def appoinment(db: Session = Depends(get_db)):
     posts = db.query(ormtable.Appoinment).all()
-    return JSONResponse({'data':posts, 'message': 'success', "status": "success"})
+    if not posts:
+        return JSONResponse({"data": [],
+                             "status": "success",
+                             "message": "No appoinment found"})
+    return JSONResponse(json.loads(json.dumps({"data": [AppoinmentDetails.parse_obj(post.__dict__).dict() for post in posts],
+                         "status": "success",
+                         "message": "success"},default=str)))
+
 
 @app.post("/user/updatedata", tags=["user"])
 def add_user(payload: UserDetails ,db: Session = Depends(get_db)):
     new_post = ormtable.User(**payload.dict())
-    new_data = [UserDetails(**new_post.__dict__).dict()]
-    for data in new_data:
-        mobile = data.get("mobile")
-        data_in_db = db.query(ormtable.User.mobile).filter(ormtable.User.mobile == mobile).all()
-        if data_in_db == []:
-            db.add(new_post)
-            db.commit()
-            db.refresh(new_post)
-            return JSONResponse({'data':new_post, 'message': 'added successfully', "status": "success"})
-        else:
-            return JSONResponse({'data':[], 'message': 'Mobile number already exists', "status": "success"})
+    new_data = UserDetails(**new_post.__dict__).dict()
+    mobile = new_data.get("mobile")
+    data_in_db = db.query(ormtable.User.mobile).filter(ormtable.User.mobile == mobile).all()
+    if data_in_db == []:
+        db.add(new_post)
+        db.commit()
+        db.refresh(new_post)
+        return JSONResponse(json.loads(json.dumps({'data':[UserDetails.parse_obj(new_post.__dict__).dict()], 'message': 'added successfully', "status": "success"},default=str)))
+    else:
+        return JSONResponse({'data':[], 'message': 'Mobile number already exists', "status": "success"})
 
 
 @app.post("/client/updatedata/signup", tags=["client"])
 def add_client(payload:ClientDetails ,db: Session = Depends(get_db)):
     payload.password= utils.hash(payload.password)
     new_post = ormtable.Client(**payload.dict())
-    new_data = [ClientDetails(**new_post.__dict__).dict()]
-    for data in new_data:
-        email = data.get("email")
-        data_in_db = db.query(ormtable.Client.email).filter(ormtable.Client.email == email).all()
-        if data_in_db == []:
-            db.add(new_post)
-            db.commit()
-            db.refresh(new_post)
-            return JSONResponse({'data':new_post, 'message': 'added successfully', "status": "success"})
-        else:
-            return JSONResponse({'data':[], 'message': 'email_id already exists', "status": "success"})
+    new_data = ClientDetails(**new_post.__dict__).dict()
+    email = new_data.get("email")
+    data_in_db = db.query(ormtable.Client.email).filter(ormtable.Client.email == email).all()
+    if data_in_db == []:
+        db.add(new_post)
+        db.commit()
+        db.refresh(new_post)
+        return JSONResponse(json.loads(json.dumps({'data':[ClientDetails.parse_obj(new_post.__dict__).dict(exclude={"password"})], 'message': 'added successfully', "status": "success"},default=str))) 
+    else:
+        return JSONResponse({'data':[], 'message': 'email_id already exists', "status": "success"})
 
-"""
-@app.post("/client/unavailabledata")
-def add_client_unavailability(payload: datatype.ClientUnAvailable ,db: Session = Depends(get_db)):
-    new_post = ormtable.ClientUnAvailable(**payload.dict())
-    db.add(new_post)
-    db.commit()
-    db.refresh(new_post)
-    return new_post
-
-"""
 
 @app.post("/appoinment/createdata", tags=["appoinment"])
 def add_appoinment(background_tasks: BackgroundTasks, payload: AppoinmentCreateDetails ,db: Session = Depends(get_db)):
@@ -112,8 +119,10 @@ def add_appoinment(background_tasks: BackgroundTasks, payload: AppoinmentCreateD
                 db.add(new_post)
                 db.commit()
                 db.refresh(new_post)
+                
                 user_mail_data = db.query(ormtable.User.email, ormtable.User.first_name, ormtable.User.last_name).filter(ormtable.User.id == user_id).first()
                 client_mail_data = db.query(ormtable.Client.email, ormtable.Client.client_name).filter(ormtable.Client.id == client_id).first()
+                
                 payload_user = """\
                                     <html>
                                     <body>
@@ -147,7 +156,7 @@ def add_appoinment(background_tasks: BackgroundTasks, payload: AppoinmentCreateD
 
                 background_tasks.add_task(mail, user_mail_data[0], "appoinment confirmation details", payload_user)
                 background_tasks.add_task(mail, client_mail_data[0], "appoinment confirmation details" , payload_client)
-                return JSONResponse({'data':[], 'message': 'Appoinment marked and email sent', "status": "success"})
+                return JSONResponse({'data':[AppoinmentDetails.parse_obj(new_post.__dict__).dict()], 'message': 'Appoinment marked and email sent', "status": "success"})
         return JSONResponse({'data':[], 'message': 'client not available on given time', "status": "success"})
     else:
         return JSONResponse({'data': [], 'message': 'client out of station', "status": "success"})
@@ -206,89 +215,6 @@ def mail(to, subject, text):
     # Should be mailServer.quit(), but that crashes...
     mailServer.close()
 
-
-"""
-@app.get("/client-availability-time-to-user/{client_id}")
-def check_client_availability(client_id : int, db: Session = Depends(get_db)):
-    availability = db.query(ormtable.ClientAvailable).filter(ormtable.ClientAvailable.client_id == client_id).all() 
-    if availability:
-        available =[]
-        available_dates = [ClientAvailableData(**ava.__dict__).dict for ava in availability]
-        for available_date in available_dates:
-            available_startdate = available_date.get("available_date")
-            available_starttime = available_date.get("available_starttime")
-            available_endtime = available_date.get("available_endtime")
-            if available_starttime == None and available_endtime == None:
-                available.append({"date": available_startdate, "status" : "unavailable" , "time":[]})
-            else:
-                available_time = []
-                available_time.append({"from" : available_starttime, "to": available_endtime})
-                available.append({"date" :available_startdate, "status": "available", "time":available_time})
-        return JSONResponse(json.loads(json.dumps({'data': available,
-            "message": "client exists", "status": "success"},default=str)))  
-    else:
-        return JSONResponse({'data': [], 'message': 'client doesnot exists', "status": "success"})
-"""
-
-"""
-@app.get("/client-availability-time-to-user/{client_id}")
-def check_client_availability(client_id : int, db: Session = Depends(get_db)):
-    availability = db.query(ormtable.ClientAvailable).filter(ormtable.ClientAvailable.client_id == client_id).all() 
-    if availability:
-        result =[]
-        available_dates = [ClientAvailable(**available.__dict__).dict(exclude={"client_id","id"}) for available in availability]
-        for available_date in available_dates:
-            available_startdate = available_date.get("available_startdate")
-            available_enddate = available_date.get("available_enddate")
-            available_starttime = available_date.get("available_starttime")
-            available_endtime = available_date.get("available_endtime")
-            # if available_startdate.strftime("%A").lower() not in ['saturday', 'sunday']:
-            while available_startdate <= available_enddate:
-                if available_startdate.weekday() <5 :
-                    result.append({"date": available_startdate , "available":{"from" :available_starttime, "to" : available_endtime},"unavailable":[] })
-                available_startdate += timedelta(days=1)
-        unavailability = db.query(ormtable.ClientUnAvailable).filter(ormtable.ClientUnAvailable.client_id == client_id).all()
-        if unavailability:
-            unavailable_dates = [ClientUnAvailable(**unavailable.__dict__).dict(exclude={"client_id","id"})for unavailable in unavailability]
-            for unavailable_date in unavailable_dates:
-                unavailable = unavailable_date.get("unavailable_date")
-                unavailable_starttime = unavailable_date.get("unavailable_starttime")
-                unavailable_endtime = unavailable_date.get("unavailable_endtime")
-                for value in result:
-                    unavailable_list = value.get('unavailable')
-                    ava_date = value.get('date')
-                    if ava_date == unavailable:
-                        if unavailable_starttime == time(9, 0) and unavailable_endtime == time(16, 0): # whole day unavailable
-                            result.remove(value)
-                        else:
-                            unavailable_list.append({"from":unavailable_starttime,"to":unavailable_endtime})
-                            value.update({"unavailable":unavailable_list})        
-        return JSONResponse(json.loads(json.dumps({'data': result,
-            "message": "client exists", "status": "success"},default=str)))
-        # return JSONResponse(json.loads(json.dumps({'data': [ClientAvailable(**available.__dict__).dict() for available in availability],
-        #     "message": "client exists", "status": "success"},default=str)))
-    else:
-        return JSONResponse({'data': [], 'message': 'client doesnot exists', "status": "success"})
-"""  
-        
-"""
-@app.get("/client/confirmation/{client_id}")
-def client_confirmation(client_id : int, db: Session = Depends(get_db)):
-    availability = db.query(ormtable.Appoinment.Appoinment_date, func.group_concat(ormtable.Appoinment.Appoinment_time).label("available_time_slots"),ormtable.Appoinment.duration,ormtable.Appoinment.user_id, ormtable.Appoinment.Appoinment_purpose).filter(ormtable.Appoinment.client_id == client_id).group_by(ormtable.Appoinment.Appoinment_date).all() 
-    if availability:
-        available =[]
-        for appoinment in availability:
-            print(appoinment)
-            appoinment_dates = appoinment[0]
-            appoinment_time = appoinment[1]
-            duration = appoinment[2]
-            user_id = appoinment[3]
-            Appoinment_purpose = appoinment[4]
-            available.append({"date": appoinment_dates, "time": appoinment_time , "duartion": duration, "user_id" : user_id,"purpose" : Appoinment_purpose})
-        return JSONResponse(json.loads(json.dumps({'data': available, "message": "confirmation", "status": "success"},default=str)))
-    else:
-        return JSONResponse({'data':[], "message": "appoinment unavailable", "status": "success"})  
-"""
 if __name__ == '__main__':
     uvicorn.run(app=app, port=8000)
 

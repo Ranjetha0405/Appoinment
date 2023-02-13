@@ -29,15 +29,6 @@ class ClientAvailable(Id,Base):
     available_endtime = Column(Time, nullable = True)
     UniqueConstraint(client_id, available_date,available_starttime, name='client_availability_starttime')
     UniqueConstraint(client_id, available_date,available_endtime, name='client_availability_endtime')
-"""
-class ClientUnAvailable(Id,Base):
-    __tablename__ = "client_unavailable"
-    client_id = Column(Integer, ForeignKey(column ='client.id'), nullable=False)
-    unavailable_date = Column(Date, nullable = False, )
-    unavailable_starttime = Column(Time, nullable = False)
-    unavailable_endtime = Column(Time, nullable = False)
-
-"""
 
 class Appoinment(Id,Base):
     __tablename__ = "appoinment"

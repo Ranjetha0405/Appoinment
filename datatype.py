@@ -24,16 +24,8 @@ class ClientDetails(Id,BaseModel):
    
 class ClientAvailable(Id, ClientId,BaseModel):
     available_date : date
-    # available_enddate : date
     available_starttime : Optional[time]
     available_endtime : Optional[time]
-"""
-class ClientUnAvailable(Id,ClientId,BaseModel):
-    unavailable_date : date
-    unavailable_starttime : time
-    unavailable_endtime : time
-
-"""
 class AppoinmentCreateDetails(ClientId,BaseModel):
     user_id : int
     Appoinment_date : date
@@ -44,7 +36,6 @@ class AppoinmentCreateDetails(ClientId,BaseModel):
 class SendEmail(BaseModel):
     email_to: str
     subject : str
-
 
 class AppoinmentDetails(Id,ClientId,BaseModel):
     user_id : int
